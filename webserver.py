@@ -1,5 +1,13 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import cgi
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from database_setup import Base, Restaurant, MenuItem
+
+engine = create_engine('sqlite:///restaurantMenu.db')
+Base.metadata.bind=engine
+DBSession = sessionmaker(bind = engine)
+session = DBSession()
 
 class webserverHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -11,14 +19,30 @@ class webserverHandler(BaseHTTPRequestHandler):
 
                 output = ""
                 output += "<html><body>"
-                output += "Hello! <a href = '/hola'>back to hola</a> "
+                output += "Hello! <a href = '/restraunts'>Restaurants List</a> "
                 output += "<h2> Okay, How About This: </h2>"
                 output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
                 output += "</body></html>"
                 self.wfile.write(output)
                 print output
                 return
+            if self.path.endswith("/restraunts"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                output = ""
+                output += "<html><body>"
+                output += "<h2> Restaurants: </h2> <ul>"
+                items = session.query(MenuItem).all()
+                for item in items:
+                    output += "<li> %s </li>" % item.name
+                output += "</ul>"
+                output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
+                output += "</body></html>"
 
+                self.wfile.write(output)
+                print output
+                return
             if self.path.endswith("/hola"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
